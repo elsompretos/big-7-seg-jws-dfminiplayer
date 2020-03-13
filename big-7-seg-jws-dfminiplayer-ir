@@ -24,12 +24,24 @@ Right    33460335  mode0: + menit   mode2: + bulan
 
 04:32 04:42 05:58 06:19 12:05 15:10 18:10 19:19
 
+ATMEGA328PB
+Global variables use 1019 bytes (49%) of dynamic memory, leaving 1029 bytes for local variables. Maximum is 2048 bytes.
+
+ATMEGA328P
+Global variables use 924 bytes (45%) of dynamic memory, leaving 1124 bytes for local variables. Maximum is 2048 bytes.
+
+21 - 32 = 1 - 12
+33      = buat setengah jam
+
 */
 
 #include <Wire.h>
 #include "RTClib.h"
 #include <IRremote.h>
 #include <EEPROM.h>
+
+#include<SoftwareSerial.h>
+#include<DFPlayer_Mini_Mp3.h>
 
 #include <SholahTimeCalulation.h>
  
@@ -66,7 +78,7 @@ int jam_sol, mnt_sol;
 // m1     14 = 51
 // m2     15 = 39
 
-int dec[15] = {63,6,91,79,102,109,125,7,127,111,0,120,94,95,39}; //ca
+int dec[16] = {63/*0*/,6/*1*/,91/*2*/,79/*3*/,102/*4*/,109/*5*/,125/*6*/,7/*7*/,127/*8*/,111/*9*/,0/*10*/,120/*11 t*/,94/*12 d*/,95/*13 a*/,51/*14 m1*/,39/*15 m2*/}; //ca
  
 int display_number1, display_number2, display_number3, display_number4, display_number5, display_number6;
 int display_tanggal1, display_tanggal2, display_tanggal3, display_tanggal4, display_tanggal5, display_tanggal6;
@@ -81,7 +93,18 @@ void setup() {
  
   Wire.begin();
   Serial.begin(9600);
-   
+  
+  // =======================
+  // ==== DFPlayer Mini ====
+  // =======================
+
+  mp3_set_serial (Serial);  //set Serial for DFPlayer-mini mp3 module
+  mp3_set_volume (20);
+  mp3_play (16); // Selamat Datang di JWS Versi 1.0
+  
+  // ==================
+  // ==== InfraRed ====
+  // ==================
   rtc.begin();
   irrecv.enableIRIn();
    
@@ -272,10 +295,7 @@ void tampilkan_jam(){
       shiftOut(dataPin, clockPin, MSBFIRST, display_number6);
       digitalWrite(latchPin, HIGH);
        
-      if (detik == 1 || detik == 3 || detik == 5 || detik == 7 || detik == 9 || detik == 11 || detik == 13 || detik == 15 || detik == 17 || detik == 19 || detik == 21 ||
-      detik == 23 || detik == 25 || detik == 27 || detik == 29 || detik == 31 || detik == 33 || detik == 35 || detik == 37 || detik == 39
-      || detik == 41 || detik == 43 || detik == 45 || detik == 47 || detik == 49 ||
-      detik == 51 || detik == 53 || detik == 55 || detik == 57 || detik == 59 ) {
+      if (detik % 2 == 0) {
         digitalWrite(seco1, LOW);
         //digitalWrite(seco2, LOW);
       }
@@ -286,18 +306,16 @@ void tampilkan_jam(){
         //digitalWrite(seco2, HIGH);
        
       }
-
-      // ambilwaktusholat();
        
-      Serial.print(puluhanjam);
-      Serial.print(satuanjam);
-      Serial.print(":");
-      Serial.print(puluhanmenit);
-      Serial.print(satuanmenit);
-      Serial.print(":");
-      Serial.print(puluhandetik);
-      Serial.println(satuandetik);
-      // Serial.println(jss);
+//      Serial.print(puluhanjam);
+//      Serial.print(satuanjam);
+//      Serial.print(":");
+//      Serial.print(puluhanmenit);
+//      Serial.print(satuanmenit);
+//      Serial.print(":");
+//      Serial.print(puluhandetik);
+//      Serial.println(satuandetik);
+//      Serial.println(jss);
     }
     
     else
@@ -309,7 +327,9 @@ void tampilkan_jam(){
 }
 
 void tampilkan_tanggal(){
+  
   ambilwaktusholat();
+  
   if (!evt_1 && (millis()-previousMillis_tanggal) > 1000) {
   previousMillis_tanggal = millis();
   
@@ -348,15 +368,15 @@ void tampilkan_tanggal(){
 
       digitalWrite(seco1, LOW);
 
-      Serial.print(puluhantanggal);
-      Serial.print(satuantanggal);
-      Serial.print("-");
-      Serial.print(puluhanbulan);
-      Serial.print(satuanbulan);
-      Serial.print("-");
-      Serial.print(puluhantahun);
-      Serial.print(satuantahun);
-      Serial.println(" *");
+//      Serial.print(puluhantanggal);
+//      Serial.print(satuantanggal);
+//      Serial.print("-");
+//      Serial.print(puluhanbulan);
+//      Serial.print(satuanbulan);
+//      Serial.print("-");
+//      Serial.print(puluhantahun);
+//      Serial.print(satuantahun);
+//      Serial.println(" *");
       
     }
     else
@@ -373,7 +393,7 @@ void tampilkan_waktu_sholat(){
   
   ambilwaktusholat();
 
- // int jam_sol, mnt_sol;
+// int jam_sol, mnt_sol;
   
   if (!evt_3 && (millis()-previousMillis_waktu_sholat) > 1000) {
   previousMillis_waktu_sholat = millis();
@@ -384,8 +404,8 @@ void tampilkan_waktu_sholat(){
 // m1     14 = 51
 // m2     15 = 39
   
-    if(csh < 8){
-      if(csh < 1){ // imsak
+    if(csh < 16){                        //          -  csh < 8
+      if(csh < 2){                       // imsak    -  csh < 1
         
         jam_sol = (String(waktu_ims).substring(0,2)).toInt();
         mnt_sol = (String(waktu_ims).substring(3,5)).toInt();
@@ -408,11 +428,11 @@ void tampilkan_waktu_sholat(){
 
         digitalWrite(seco1, HIGH);
 
-        Serial.print("I"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
-        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
+//        Serial.print("I"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
+//        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
         
       }
-      else if (csh > 0 && csh < 2){ // subuh
+      else if (csh > 1 && csh < 4)   {   // subuh    -  csh > 0 && csh < 2
         jam_sol = (String(waktu_sbh).substring(0,2)).toInt();
         mnt_sol = (String(waktu_sbh).substring(3,5)).toInt();
 
@@ -434,10 +454,10 @@ void tampilkan_waktu_sholat(){
 
         digitalWrite(seco1, HIGH);
 
-        Serial.print("S"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
-        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
+//        Serial.print("S"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
+//        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
       }
-      else if (csh > 1 && csh < 3){ // terbit
+      else if (csh > 3 && csh < 6)   {   // terbit   -  csh > 1 && csh < 3
         jam_sol = (String(waktu_tbt).substring(0,2)).toInt();
         mnt_sol = (String(waktu_tbt).substring(3,5)).toInt();
 
@@ -459,10 +479,10 @@ void tampilkan_waktu_sholat(){
 
         digitalWrite(seco1, HIGH); 
 
-        Serial.print("t"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
-        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
+//        Serial.print("t"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
+//        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
       }
-      else if (csh > 2 && csh < 4){ // dhuha
+      else if (csh > 5 && csh < 8)   {   // dhuha    -  csh > 2 && csh < 4
         jam_sol = (String(waktu_dhu).substring(0,2)).toInt();
         mnt_sol = (String(waktu_dhu).substring(3,5)).toInt();
 
@@ -484,10 +504,10 @@ void tampilkan_waktu_sholat(){
 
         digitalWrite(seco1, HIGH); 
         
-        Serial.print("d"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
-        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
+//        Serial.print("d"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
+//        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
       }
-      else if (csh > 3 && csh < 5){ // dzuhur
+      else if (csh > 7 && csh < 10)  {   // dzuhur   -  csh > 3 && csh < 5
         jam_sol = (String(waktu_dzr).substring(0,2)).toInt();
         mnt_sol = (String(waktu_dzr).substring(3,5)).toInt();
 
@@ -509,10 +529,10 @@ void tampilkan_waktu_sholat(){
 
         digitalWrite(seco1, HIGH);
 
-        Serial.print("z"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
-        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
+//        Serial.print("z"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
+//        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
       }
-      else if (csh > 4 && csh < 6){ // ashar
+      else if (csh > 9 && csh < 12)  {   // ashar    -  csh > 4 && csh < 6
         jam_sol = (String(waktu_asr).substring(0,2)).toInt();
         mnt_sol = (String(waktu_asr).substring(3,5)).toInt();
 
@@ -534,10 +554,10 @@ void tampilkan_waktu_sholat(){
 
         digitalWrite(seco1, HIGH); 
 
-        Serial.print("a"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
-        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
+//        Serial.print("a"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
+//        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
       }
-      else if (csh > 5 && csh < 7){ // maghrib
+      else if (csh > 11 && csh < 14) {   // maghrib  -  csh > 5 && csh < 7
         jam_sol = (String(waktu_mgr).substring(0,2)).toInt();
         mnt_sol = (String(waktu_mgr).substring(3,5)).toInt();
 
@@ -559,10 +579,10 @@ void tampilkan_waktu_sholat(){
 
         digitalWrite(seco1, HIGH);
 
-        Serial.print("m"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
-        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
+//        Serial.print("m"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
+//        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
       }
-      else if (csh > 6){ // isya
+      else if (csh > 13)             {   // isya     -  csh > 6
         jam_sol = (String(waktu_isy).substring(0,2)).toInt();
         mnt_sol = (String(waktu_isy).substring(3,5)).toInt();
 
@@ -584,8 +604,8 @@ void tampilkan_waktu_sholat(){
 
         digitalWrite(seco1, HIGH);
         
-        Serial.print("I"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
-        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
+//        Serial.print("I"); Serial.print(" "); Serial.print(":"); Serial.print(puluhanjam);
+//        Serial.print(satuanjam); Serial.print(":"); Serial.print(puluhanmenit); Serial.println(satuanmenit);
       }
       csh++;
     }
@@ -610,21 +630,27 @@ void tampilkan_waktu_masuk(){
       if(wkt_msk_skrg==1){
         jam_sol = (String(waktu_ims).substring(0,2)).toInt();
         mnt_sol = (String(waktu_ims).substring(3,5)).toInt();  
+        mp3_play (3); // Beep
       } else if (wkt_msk_skrg==2){
         jam_sol = (String(waktu_sbh).substring(0,2)).toInt();
         mnt_sol = (String(waktu_sbh).substring(3,5)).toInt();  
+        if(dsh == 1){ mp3_play (2); } // Play Adzan Subuh 
       } else if (wkt_msk_skrg==3){
         jam_sol = (String(waktu_dzr).substring(0,2)).toInt();
-        mnt_sol = (String(waktu_dzr).substring(3,5)).toInt();  
+        mnt_sol = (String(waktu_dzr).substring(3,5)).toInt(); 
+        if(dsh == 1){ mp3_play (1); } // Play Adzan Biasa 
       } else if (wkt_msk_skrg==4){
         jam_sol = (String(waktu_asr).substring(0,2)).toInt();
-        mnt_sol = (String(waktu_asr).substring(3,5)).toInt();  
+        mnt_sol = (String(waktu_asr).substring(3,5)).toInt(); 
+        if(dsh == 1){ mp3_play (1); } // Play Adzan Biasa  
       } else if (wkt_msk_skrg==5){
         jam_sol = (String(waktu_mgr).substring(0,2)).toInt();
-        mnt_sol = (String(waktu_mgr).substring(3,5)).toInt();  
+        mnt_sol = (String(waktu_mgr).substring(3,5)).toInt();
+        if(dsh == 1){ mp3_play (1); } // Play Adzan Biasa   
       } else if (wkt_msk_skrg==6){
         jam_sol = (String(waktu_isy).substring(0,2)).toInt();
-        mnt_sol = (String(waktu_isy).substring(3,5)).toInt();  
+        mnt_sol = (String(waktu_isy).substring(3,5)).toInt(); 
+        if(dsh == 1){ mp3_play (1); } // Play Adzan Biasa  
       }
 
         satuanjam = jam_sol % 10; puluhanjam = jam_sol / 10;
@@ -645,15 +671,15 @@ void tampilkan_waktu_masuk(){
 
         digitalWrite(seco1, HIGH); 
 
-        if (dsh % 2 == 0){
-          digitalWrite(buz,HIGH);
-        }
-        else
-        {
-          digitalWrite(buz,LOW);
-        }
+//        if (dsh % 2 == 0){
+//          digitalWrite(buz,HIGH);
+//        }
+//        else
+//        {
+//          digitalWrite(buz,LOW);
+//        }
 
-        Serial.println("Masuk Waktu...!!!");
+//        Serial.println("Masuk Waktu...!!!");
 
 
     }
@@ -701,15 +727,15 @@ void tampilkan_edit_tanggal(){
 
       digitalWrite(seco1, LOW);
 
-      Serial.print(puluhantanggal);
-      Serial.print(satuantanggal);
-      Serial.print("-");
-      Serial.print(puluhanbulan);
-      Serial.print(satuanbulan);
-      Serial.print("-");
-      Serial.print(puluhantahun);
-      Serial.print(satuantahun);
-      Serial.println(" *");
+//      Serial.print(puluhantanggal);
+//      Serial.print(satuantanggal);
+//      Serial.print("-");
+//      Serial.print(puluhanbulan);
+//      Serial.print(satuanbulan);
+//      Serial.print("-");
+//      Serial.print(puluhantahun);
+//      Serial.print(satuantahun);
+//      Serial.println(" *");
       
     
   }
@@ -730,9 +756,6 @@ void ambilwaktusholat(){
   sholat.dateSet(tahun,bulan,tanggal);
   sholat.ihtiyatiSet(2);
   sholat.calculate();
-  
-  // jss = "";
-  
   
   for(int ws=0; ws<SholatCount;ws++){
     sholat.getTimePart(ws,hh_sol, mm_sol);
@@ -776,6 +799,23 @@ void ambilwaktusholat(){
         wkt_msk_skrg = 6;
         csh=0; bsh=0; ash=0;
         mode=4;
+      }
+      if(menit == 0 && detik == 0){
+        if (jam == 1 || jam == 13){ mp3_play (21); }
+        if (jam == 2 || jam == 14){ mp3_play (22); }
+        if (jam == 3 || jam == 15){ mp3_play (23); }
+        if (jam == 4 || jam == 16){ mp3_play (24); }
+        if (jam == 5 || jam == 17){ mp3_play (25); }
+        if (jam == 6 || jam == 18){ mp3_play (26); }
+        if (jam == 7 || jam == 19){ mp3_play (27); }
+        if (jam == 8 || jam == 20){ mp3_play (28); }
+        if (jam == 9 || jam == 21){ mp3_play (29); }
+        if (jam == 10 || jam == 22){ mp3_play (30); }
+        if (jam == 11 || jam == 23){ mp3_play (31); }
+        if (jam == 12 || jam == 0){ mp3_play (32); }
+        
+        
+        
       }
 }
 
